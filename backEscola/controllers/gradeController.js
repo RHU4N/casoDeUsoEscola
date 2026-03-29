@@ -1,6 +1,6 @@
 const { StudentGrade, User } = require('../models');
 
-const userAttributes = ['id', 'name', 'email', 'role', 'cpf', 'address', 'phone', 'passwordUpdatedAt'];
+const userAttributes = ['id', 'name', 'email', 'role'];
 
 const gradeIncludes = [
   {
@@ -14,6 +14,16 @@ const gradeIncludes = [
     attributes: userAttributes
   }
 ];
+
+const getTeacherAssignedSubject = async (teacherId) => {
+  const existingGrade = await StudentGrade.findOne({
+    where: { teacherId },
+    attributes: ['subject'],
+    order: [['createdAt', 'ASC']]
+  });
+
+  return existingGrade?.subject || null;
+};
 
 const listGrades = async (req, res, next) => {
   try {
@@ -84,6 +94,13 @@ const createGrade = async (req, res, next) => {
       return res.status(403).json({ message: 'Apenas professores podem criar notas.' });
     }
 
+    const assignedSubject = await getTeacherAssignedSubject(teacherId);
+    if (assignedSubject && assignedSubject !== subject) {
+      return res.status(403).json({
+        message: `Voce so pode lancar notas da sua materia (${assignedSubject}).`
+      });
+    }
+
     const studentGrade = await StudentGrade.create({ studentId, teacherId, subject, grade });
     const createdGrade = await StudentGrade.findByPk(studentGrade.id, {
       include: gradeIncludes
@@ -118,6 +135,13 @@ const updateGrade = async (req, res, next) => {
         return res.status(400).json({ message: 'studentId deve pertencer a um usuario com role student.' });
       }
       grade.studentId = studentId;
+    }
+
+    const assignedSubject = await getTeacherAssignedSubject(teacherId);
+    if (subject && assignedSubject && subject !== assignedSubject) {
+      return res.status(403).json({
+        message: `Voce so pode editar notas da sua materia (${assignedSubject}).`
+      });
     }
 
     grade.subject = subject || grade.subject;

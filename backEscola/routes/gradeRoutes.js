@@ -14,8 +14,8 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.get('/my', authorizeRoles('student'), listMyGrades);
-router.get('/', listGrades);
-router.get('/:id', getGradeById);
+router.get('/', authorizeRoles('teacher', 'admin'), listGrades);
+router.get('/:id', authorizeRoles('teacher', 'admin'), getGradeById);
 router.post('/', authorizeRoles('teacher'), createGrade);
 router.put('/:id', authorizeRoles('teacher'), updateGrade);
 router.delete('/:id', authorizeRoles('teacher'), deleteGrade);

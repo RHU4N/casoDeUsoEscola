@@ -1,8 +1,9 @@
 const express = require('express');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 const handleValidationErrors = require('../middleware/validationMiddleware');
 const { createUserValidation, updateUserValidation } = require('../middleware/userValidation');
 const {
+  getMyProfile,
   listUsers,
   getUserById,
   createUser,
@@ -13,6 +14,10 @@ const {
 const router = express.Router();
 
 router.use(authenticateToken);
+
+router.get('/me', getMyProfile);
+
+router.use(authorizeRoles('admin'));
 
 router.get('/', listUsers);
 router.get('/:id', getUserById);

@@ -1,5 +1,23 @@
 const { User, StudentGrade } = require('../models');
 
+const userBaseAttributes = ['id', 'name', 'email', 'role', 'cpf', 'address', 'phone', 'passwordUpdatedAt', 'createdAt', 'updatedAt'];
+
+const getMyProfile = async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.user.id, {
+      attributes: userBaseAttributes
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario nao encontrado.' });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const listUsers = async (req, res, next) => {
   try {
     const users = await User.findAll({
@@ -55,6 +73,11 @@ const createUser = async (req, res, next) => {
       return res.status(409).json({ message: 'Email ja cadastrado.' });
     }
 
+    const cpfExists = await User.findOne({ where: { cpf } });
+    if (cpfExists) {
+      return res.status(409).json({ message: 'CPF ja cadastrado.' });
+    }
+
     const user = await User.create({ name, email, password, role, cpf, address, phone });
 
     return res.status(201).json({
@@ -85,6 +108,13 @@ const updateUser = async (req, res, next) => {
       const emailInUse = await User.findOne({ where: { email } });
       if (emailInUse) {
         return res.status(409).json({ message: 'Email ja cadastrado.' });
+      }
+    }
+
+    if (cpf && cpf !== user.cpf) {
+      const cpfInUse = await User.findOne({ where: { cpf } });
+      if (cpfInUse) {
+        return res.status(409).json({ message: 'CPF ja cadastrado.' });
       }
     }
 
@@ -132,6 +162,7 @@ const deleteUser = async (req, res, next) => {
 };
 
 module.exports = {
+  getMyProfile,
   listUsers,
   getUserById,
   createUser,

@@ -2,10 +2,14 @@ const { Sequelize } = require('sequelize');
 const mysql = require('mysql2/promise');
 
 const dbName = process.env.DB_NAME || 'escola_db';
-const dbUser = process.env.DB_USER || 'root';
-const dbPassword = process.env.DB_PASSWORD || 'root';
+const dbUser = process.env.DB_USER;
+const dbPassword = process.env.DB_PASSWORD;
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbPort = Number(process.env.DB_PORT) || 3306;
+
+if (!dbUser || !dbPassword) {
+  throw new Error('DB_USER e DB_PASSWORD devem estar definidos nas variaveis de ambiente.');
+}
 
 const sequelize = new Sequelize(
   dbName,

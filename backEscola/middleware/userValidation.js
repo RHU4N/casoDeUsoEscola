@@ -20,8 +20,8 @@ const registerValidation = [
   emailRules,
   passwordRules,
   body('role')
-    .notEmpty().withMessage('role e obrigatorio.')
-    .isIn(['student', 'teacher', 'admin']).withMessage('role deve ser student, teacher ou admin.'),
+    .optional()
+    .isIn(['student']).withMessage('role deve ser student no cadastro publico.'),
   body('cpf')
     .trim()
     .notEmpty().withMessage('cpf e obrigatorio.'),
@@ -40,7 +40,25 @@ const loginValidation = [
     .notEmpty().withMessage('password e obrigatorio.')
 ];
 
-const createUserValidation = [...registerValidation];
+const createUserValidation = [
+  body('name')
+    .trim()
+    .notEmpty().withMessage('name e obrigatorio.'),
+  emailRules,
+  passwordRules,
+  body('role')
+    .notEmpty().withMessage('role e obrigatorio.')
+    .isIn(['student', 'teacher', 'admin']).withMessage('role deve ser student, teacher ou admin.'),
+  body('cpf')
+    .trim()
+    .notEmpty().withMessage('cpf e obrigatorio.'),
+  body('address')
+    .trim()
+    .notEmpty().withMessage('address e obrigatorio.'),
+  body('phone')
+    .trim()
+    .notEmpty().withMessage('phone e obrigatorio.')
+];
 
 const updateUserValidation = [
   body('name')

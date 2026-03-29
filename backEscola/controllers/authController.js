@@ -2,6 +2,13 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const jwtConfig = require('../config/jwt');
 
+const serializeAuthUser = (user) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  role: user.role
+});
+
 const generateToken = (user) => {
   return jwt.sign({ id: user.id, role: user.role }, jwtConfig.secret, {
     expiresIn: jwtConfig.expiresIn
@@ -10,10 +17,10 @@ const generateToken = (user) => {
 
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role, cpf, address, phone } = req.body;
+    const { name, email, password, role = 'student', cpf, address, phone } = req.body;
 
-    if (!name || !email || !password || !role || !cpf || !address || !phone) {
-      return res.status(400).json({ message: 'name, email, password, role, cpf, address e phone sao obrigatorios.' });
+    if (!name || !email || !password || !cpf || !address || !phone) {
+      return res.status(400).json({ message: 'name, email, password, cpf, address e phone sao obrigatorios.' });
     }
 
     const userExists = await User.findOne({ where: { email } });
@@ -21,21 +28,17 @@ const register = async (req, res, next) => {
       return res.status(409).json({ message: 'Email ja cadastrado.' });
     }
 
+    const cpfExists = await User.findOne({ where: { cpf } });
+    if (cpfExists) {
+      return res.status(409).json({ message: 'CPF ja cadastrado.' });
+    }
+
     const user = await User.create({ name, email, password, role, cpf, address, phone });
     const token = generateToken(user);
 
     return res.status(201).json({
       message: 'Usuario criado com sucesso.',
-      usuario: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        cpf: user.cpf,
-        address: user.address,
-        phone: user.phone,
-        passwordUpdatedAt: user.passwordUpdatedAt
-      },
+      usuario: serializeAuthUser(user),
       token
     });
   } catch (error) {
@@ -65,16 +68,7 @@ const login = async (req, res, next) => {
 
     return res.status(200).json({
       message: 'Login realizado com sucesso.',
-      usuario: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        cpf: user.cpf,
-        address: user.address,
-        phone: user.phone,
-        passwordUpdatedAt: user.passwordUpdatedAt
-      },
+      usuario: serializeAuthUser(user),
       token
     });
   } catch (error) {

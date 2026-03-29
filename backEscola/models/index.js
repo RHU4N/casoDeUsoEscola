@@ -44,6 +44,5 @@ module.exports = {
   sequelize,
   User,
   StudentGrade,
-  Log,
-  Grade: StudentGrade
+  Log
 };
