@@ -23,20 +23,50 @@ const {
   uploadSuccess,
   authLoading,
   gradesLoading,
+  gradeCreateLoading,
+  gradeEditLoading,
   profileLoading,
   registerLoading,
+  userEditLoading,
   uploadLoading,
   uploadProgress,
   isAuthenticated,
   canManageUsers,
   visibleGrades,
+  users,
+  students,
+  gradeForm,
+  editingUserId,
+  editingGradeId,
+  userEditError,
+  userEditSuccess,
+  gradeEditError,
+  gradeEditSuccess,
+  gradeCreateError,
+  gradeCreateSuccess,
   statCards,
   uploadHistory,
   roleLabel,
   formatDateTime,
   formatGradeValue,
   handleLogin,
-  createUser,
+  submitUserForm,
+  startEditUser,
+  resetUserForm,
+  deleteUser,
+  createGrade,
+  submitGradeForm,
+  startEditGrade,
+  resetGradeForm,
+  deleteGrade,
+  showUserEditModal,
+  closeUserEditModal,
+  showGradeEditModal,
+  closeGradeEditModal,
+  userDeleteLoading,
+  userDeleteError,
+  gradeDeleteLoading,
+  gradeDeleteError,
   uploadDocument,
   refreshCurrentView,
   setView,
@@ -146,11 +176,28 @@ onMounted(async () => {
           v-else-if="currentView === 'grades'"
           :role="user?.role"
           :role-label="roleLabel"
+          :editing-grade-id="editingGradeId"
+          :students="students"
+          :grade-form="gradeForm"
+          :grade-create-loading="gradeCreateLoading"
+          :grade-edit-loading="gradeEditLoading"
+          :grade-create-error="gradeCreateError"
+          :grade-create-success="gradeCreateSuccess"
+          :grade-edit-error="gradeEditError"
+          :grade-edit-success="gradeEditSuccess"
           :grades="visibleGrades"
           :loading="gradesLoading"
           :error="gradesError"
           :format-grade-value="formatGradeValue"
           :format-date-time="formatDateTime"
+          :show-grade-edit-modal="showGradeEditModal"
+          :grade-delete-loading="gradeDeleteLoading"
+          :grade-delete-error="gradeDeleteError"
+          @submit-grade="submitGradeForm"
+          @edit-grade="startEditGrade"
+          @cancel-grade-edit="resetGradeForm"
+          @close-grade-modal="closeGradeEditModal"
+          @delete-grade="deleteGrade"
         />
 
         <UploadCenterView
@@ -167,11 +214,20 @@ onMounted(async () => {
         <UserRegistrationView
           v-else
           :can-manage-users="canManageUsers"
+          :users="users"
+          :editing-user-id="editingUserId"
           :form="registerForm"
-          :loading="registerLoading"
-          :error="registerError"
-          :success="registerSuccess"
-          @submit="createUser"
+          :loading="registerLoading || userEditLoading"
+          :error="registerError || userEditError"
+          :success="registerSuccess || userEditSuccess"
+          :show-user-edit-modal="showUserEditModal"
+          :user-delete-loading="userDeleteLoading"
+          :user-delete-error="userDeleteError"
+          @submit="submitUserForm"
+          @edit-user="startEditUser"
+          @cancel-edit="resetUserForm"
+          @close-user-modal="closeUserEditModal"
+          @delete-user="deleteUser"
         />
       </main>
     </section>

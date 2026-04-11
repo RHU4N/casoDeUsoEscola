@@ -5,6 +5,7 @@ const { createUserValidation, updateUserValidation } = require('../middleware/us
 const {
   getMyProfile,
   listUsers,
+  listStudents,
   getUserById,
   createUser,
   updateUser,
@@ -16,6 +17,7 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.get('/me', getMyProfile);
+router.get('/alunos', authorizeRoles('teacher', 'admin'), listStudents);
 
 router.use(authorizeRoles('admin'));
 

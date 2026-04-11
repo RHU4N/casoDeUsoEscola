@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "seed:test-users": "node scripts/seedTestUsers.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

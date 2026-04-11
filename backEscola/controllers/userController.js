@@ -37,6 +37,19 @@ const listUsers = async (req, res, next) => {
   }
 };
 
+const listStudents = async (req, res, next) => {
+  try {
+    const students = await User.findAll({
+      where: { role: 'student' },
+      attributes: ['id', 'name', 'email', 'role']
+    });
+
+    return res.status(200).json(students);
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const getUserById = async (req, res, next) => {
   try {
     const user = await User.findByPk(req.params.id, {
@@ -164,6 +177,7 @@ const deleteUser = async (req, res, next) => {
 module.exports = {
   getMyProfile,
   listUsers,
+  listStudents,
   getUserById,
   createUser,
   updateUser,

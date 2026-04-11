@@ -34,20 +34,39 @@ export function useSchoolDashboard() {
   const authToken = ref(localStorage.getItem(TOKEN_STORAGE_KEY) || '')
   const user = ref(readStoredUser())
   const grades = ref([])
+  const students = ref([])
+  const users = ref([])
   const authError = ref('')
   const authSuccess = ref('')
   const gradesError = ref('')
+  const gradeCreateError = ref('')
+  const gradeCreateSuccess = ref('')
+  const gradeEditError = ref('')
+  const gradeEditSuccess = ref('')
   const authLoading = ref(false)
   const gradesLoading = ref(false)
+  const gradeCreateLoading = ref(false)
+  const gradeEditLoading = ref(false)
   const profileLoading = ref(false)
   const registerLoading = ref(false)
   const registerError = ref('')
   const registerSuccess = ref('')
+  const userEditError = ref('')
+  const userEditSuccess = ref('')
+  const userEditLoading = ref(false)
   const uploadLoading = ref(false)
   const uploadError = ref('')
   const uploadSuccess = ref('')
   const uploadProgress = ref(0)
   const uploadHistory = ref([])
+  const editingUserId = ref('')
+  const editingGradeId = ref('')
+  const showUserEditModal = ref(false)
+  const showGradeEditModal = ref(false)
+  const userDeleteLoading = ref(false)
+  const userDeleteError = ref('')
+  const gradeDeleteLoading = ref(false)
+  const gradeDeleteError = ref('')
 
   const registerForm = reactive({
     name: '',
@@ -58,6 +77,15 @@ export function useSchoolDashboard() {
     address: '',
     phone: ''
   })
+
+  const gradeForm = reactive({
+    studentId: '',
+    subject: '',
+    grade: ''
+  })
+
+  const userFormMode = computed(() => (editingUserId.value ? 'edit' : 'create'))
+  const gradeFormMode = computed(() => (editingGradeId.value ? 'edit' : 'create'))
 
   const isAuthenticated = computed(() => Boolean(authToken.value && user.value))
   const canManageUsers = computed(() => user.value?.role === 'admin')
@@ -207,6 +235,10 @@ export function useSchoolDashboard() {
   const visibleGrades = computed(() => filterVisibleGrades(grades.value))
 
   const averageGrade = computed(() => {
+    if (user.value?.role !== 'student') {
+      return null
+    }
+
     if (!visibleGrades.value.length) {
       return null
     }
@@ -224,7 +256,7 @@ export function useSchoolDashboard() {
   })
 
   const statCards = computed(() => {
-    return [
+    const cards = [
       {
         label: 'Perfil',
         value: roleLabel(user.value?.role)
@@ -234,14 +266,19 @@ export function useSchoolDashboard() {
         value: String(visibleGrades.value.length)
       },
       {
-        label: 'Media atual',
-        value: averageGrade.value || '--'
-      },
-      {
         label: 'Ultimo registro',
         value: latestGradeDate.value
       }
     ]
+
+    if (user.value?.role === 'student') {
+      cards.splice(2, 0, {
+        label: 'Media atual',
+        value: averageGrade.value || '--'
+      })
+    }
+
+    return cards
   })
 
   const fetchGrades = async () => {
@@ -261,6 +298,34 @@ export function useSchoolDashboard() {
       gradesError.value = error.message
     } finally {
       gradesLoading.value = false
+    }
+  }
+
+  const fetchStudents = async () => {
+    if (!user.value || !authToken.value || !['teacher', 'admin'].includes(user.value.role)) {
+      students.value = []
+      return
+    }
+
+    try {
+      const response = await request('/usuarios/alunos', {}, true)
+      students.value = Array.isArray(response) ? response : []
+    } catch {
+      students.value = []
+    }
+  }
+
+  const fetchUsers = async () => {
+    if (!user.value || !authToken.value || user.value.role !== 'admin') {
+      users.value = []
+      return
+    }
+
+    try {
+      const response = await request('/usuarios', {}, true)
+      users.value = Array.isArray(response) ? response : []
+    } catch {
+      users.value = []
     }
   }
 
@@ -307,7 +372,11 @@ export function useSchoolDashboard() {
       return 'Informe um email valido.'
     }
 
-    if (!STRONG_PASSWORD_REGEX.test(password)) {
+    if (!editingUserId.value && !STRONG_PASSWORD_REGEX.test(password)) {
+      return 'Senha fraca: minimo 8 caracteres, com maiuscula, numero e simbolo.'
+    }
+
+    if (editingUserId.value && password && !STRONG_PASSWORD_REGEX.test(password)) {
       return 'Senha fraca: minimo 8 caracteres, com maiuscula, numero e simbolo.'
     }
 
@@ -369,6 +438,259 @@ export function useSchoolDashboard() {
     } finally {
       registerLoading.value = false
     }
+  }
+
+  const resetUserForm = () => {
+    registerForm.name = ''
+    registerForm.email = ''
+    registerForm.password = ''
+    registerForm.role = 'student'
+    registerForm.cpf = ''
+    registerForm.address = ''
+    registerForm.phone = ''
+    editingUserId.value = ''
+    registerError.value = ''
+    registerSuccess.value = ''
+    userEditError.value = ''
+    userEditSuccess.value = ''
+  }
+
+  const startEditUser = (selectedUser) => {
+    editingUserId.value = String(selectedUser.id)
+    registerForm.name = selectedUser.name || ''
+    registerForm.email = selectedUser.email || ''
+    registerForm.password = ''
+    registerForm.role = selectedUser.role || 'student'
+    registerForm.cpf = selectedUser.cpf || ''
+    registerForm.address = selectedUser.address || ''
+    registerForm.phone = selectedUser.phone || ''
+    registerError.value = ''
+    registerSuccess.value = ''
+    userEditError.value = ''
+    userEditSuccess.value = ''
+    showUserEditModal.value = true
+  }
+
+  const closeUserEditModal = () => {
+    showUserEditModal.value = false
+    resetUserForm()
+  }
+
+  const submitUserForm = async () => {
+    if (editingUserId.value) {
+      userEditLoading.value = true
+      userEditError.value = ''
+      userEditSuccess.value = ''
+
+      try {
+        const validationError = validateRegisterForm()
+        if (validationError) {
+          throw new Error(validationError)
+        }
+
+        const payload = {
+          name: registerForm.name.trim(),
+          email: registerForm.email.trim(),
+          role: registerForm.role,
+          cpf: onlyDigits(registerForm.cpf),
+          address: registerForm.address.trim(),
+          phone: onlyDigits(registerForm.phone)
+        }
+
+        if (registerForm.password) {
+          payload.password = registerForm.password
+        }
+
+        await request(`/usuarios/${editingUserId.value}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        }, true)
+
+        userEditSuccess.value = 'Usuario atualizado com sucesso.'
+        resetUserForm()
+        await fetchUsers()
+      } catch (error) {
+        userEditError.value = error.message
+      } finally {
+        userEditLoading.value = false
+      }
+
+      return
+    }
+
+    await createUser()
+    await fetchUsers()
+  }
+
+  const validateGradeForm = () => {
+    const studentId = String(gradeForm.studentId || '').trim()
+    const subject = String(gradeForm.subject || '').trim()
+    const numericGrade = Number(gradeForm.grade)
+
+    if (!studentId) {
+      return 'Selecione um aluno.'
+    }
+
+    if (subject.length < 2) {
+      return 'Informe a disciplina.'
+    }
+
+    if (Number.isNaN(numericGrade) || numericGrade < 0 || numericGrade > 10) {
+      return 'A nota deve ficar entre 0 e 10.'
+    }
+
+    return null
+  }
+
+  const createGrade = async () => {
+    if (!user.value || user.value.role !== 'teacher') {
+      gradeCreateError.value = 'Somente professores podem lançar notas.'
+      gradeCreateSuccess.value = ''
+      return
+    }
+
+    gradeCreateLoading.value = true
+    gradeCreateError.value = ''
+    gradeCreateSuccess.value = ''
+
+    try {
+      const validationError = validateGradeForm()
+      if (validationError) {
+        throw new Error(validationError)
+      }
+
+      await request('/grades', {
+        method: 'POST',
+        body: JSON.stringify({
+          studentId: Number(gradeForm.studentId),
+          subject: String(gradeForm.subject).trim(),
+          grade: Number(gradeForm.grade)
+        })
+      }, true)
+
+      gradeCreateSuccess.value = 'Nota cadastrada com sucesso.'
+      resetGradeForm()
+      await fetchGrades()
+      await fetchStudents()
+    } catch (error) {
+      gradeCreateError.value = error.message
+    } finally {
+      gradeCreateLoading.value = false
+    }
+  }
+
+  const startEditGrade = (selectedGrade) => {
+    editingGradeId.value = String(selectedGrade.id)
+    gradeForm.studentId = String(selectedGrade.studentId || '')
+    gradeForm.subject = selectedGrade.subject || ''
+    gradeForm.grade = String(selectedGrade.grade ?? '')
+    gradeCreateError.value = ''
+    gradeCreateSuccess.value = ''
+    gradeEditError.value = ''
+    gradeEditSuccess.value = ''
+    showGradeEditModal.value = true
+  }
+
+  const closeGradeEditModal = () => {
+    showGradeEditModal.value = false
+    resetGradeForm()
+  }
+
+  const resetGradeForm = () => {
+    gradeForm.studentId = ''
+    gradeForm.subject = ''
+    gradeForm.grade = ''
+    editingGradeId.value = ''
+    gradeCreateError.value = ''
+    gradeCreateSuccess.value = ''
+    gradeEditError.value = ''
+    gradeEditSuccess.value = ''
+  }
+
+  const deleteUser = async (userId) => {
+    if (!userId) {
+      userDeleteError.value = 'Usuario invalido.'
+      return
+    }
+
+    userDeleteLoading.value = true
+    userDeleteError.value = ''
+
+    try {
+      await request(`/usuarios/${userId}`, {
+        method: 'DELETE'
+      }, true)
+
+      resetUserForm()
+      await fetchUsers()
+      userEditSuccess.value = 'Usuario excluido com sucesso.'
+    } catch (error) {
+      userDeleteError.value = error.message
+    } finally {
+      userDeleteLoading.value = false
+    }
+  }
+
+  const deleteGrade = async (gradeId) => {
+    if (!gradeId) {
+      gradeDeleteError.value = 'Nota invalida.'
+      return
+    }
+
+    gradeDeleteLoading.value = true
+    gradeDeleteError.value = ''
+
+    try {
+      await request(`/grades/${gradeId}`, {
+        method: 'DELETE'
+      }, true)
+
+      resetGradeForm()
+      await fetchGrades()
+      await fetchStudents()
+      gradeEditSuccess.value = 'Nota excluida com sucesso.'
+    } catch (error) {
+      gradeDeleteError.value = error.message
+    } finally {
+      gradeDeleteLoading.value = false
+    }
+  }
+
+  const submitGradeForm = async () => {
+    if (editingGradeId.value) {
+      gradeEditLoading.value = true
+      gradeEditError.value = ''
+      gradeEditSuccess.value = ''
+
+      try {
+        const validationError = validateGradeForm()
+        if (validationError) {
+          throw new Error(validationError)
+        }
+
+        await request(`/grades/${editingGradeId.value}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            studentId: Number(gradeForm.studentId),
+            subject: String(gradeForm.subject).trim(),
+            grade: Number(gradeForm.grade)
+          })
+        }, true)
+
+        gradeEditSuccess.value = 'Nota atualizada com sucesso.'
+        resetGradeForm()
+        await fetchGrades()
+        await fetchStudents()
+      } catch (error) {
+        gradeEditError.value = error.message
+      } finally {
+        gradeEditLoading.value = false
+      }
+
+      return
+    }
+
+    await createGrade()
   }
 
   const uploadDocument = async (file) => {
@@ -472,6 +794,8 @@ export function useSchoolDashboard() {
 
       await fetchMyProfile()
       await fetchGrades()
+      await fetchStudents()
+      await fetchUsers()
       loadUploadHistory()
     } catch (error) {
       authError.value = error.message
@@ -487,6 +811,11 @@ export function useSchoolDashboard() {
 
     if (currentView.value === 'grades') {
       await fetchGrades()
+      await fetchStudents()
+    }
+
+    if (currentView.value === 'users') {
+      await fetchUsers()
     }
   }
 
@@ -495,6 +824,11 @@ export function useSchoolDashboard() {
 
     if (view === 'grades') {
       await fetchGrades()
+      await fetchStudents()
+    }
+
+    if (view === 'users') {
+      await fetchUsers()
     }
 
     if (view === 'uploads') {
@@ -515,25 +849,49 @@ export function useSchoolDashboard() {
 
     await fetchMyProfile()
     await fetchGrades()
+    await fetchStudents()
+    await fetchUsers()
     loadUploadHistory()
   }
 
   return {
     loginForm,
     registerForm,
+    gradeForm,
     currentView,
     user,
+    users,
+    students,
+    editingUserId,
+    editingGradeId,
+    showUserEditModal,
+    showGradeEditModal,
+    userFormMode,
+    gradeFormMode,
     authError,
     authSuccess,
     gradesError,
+    gradeCreateError,
+    gradeCreateSuccess,
+    gradeEditError,
+    gradeEditSuccess,
     registerError,
     registerSuccess,
+    userEditError,
+    userEditSuccess,
+    userDeleteLoading,
+    userDeleteError,
+    gradeDeleteLoading,
+    gradeDeleteError,
     uploadError,
     uploadSuccess,
     authLoading,
     gradesLoading,
+    gradeCreateLoading,
+    gradeEditLoading,
     profileLoading,
     registerLoading,
+    userEditLoading,
     uploadLoading,
     uploadProgress,
     isAuthenticated,
@@ -546,6 +904,17 @@ export function useSchoolDashboard() {
     formatGradeValue,
     handleLogin,
     createUser,
+    submitUserForm,
+    startEditUser,
+    resetUserForm,
+    deleteUser,
+    closeUserEditModal,
+    createGrade,
+    submitGradeForm,
+    startEditGrade,
+    resetGradeForm,
+    deleteGrade,
+    closeGradeEditModal,
     uploadDocument,
     refreshCurrentView,
     setView,
