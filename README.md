@@ -36,11 +36,11 @@ backEscola (:3000)
 
 ## Perfis de acesso
 
-| Perfil | Permissões principais |
-| --- | --- |
-| `student` | Visualizar as próprias notas, perfil e enviar uploads |
+| Perfil    | Permissões principais                                                    |
+| --------- | ------------------------------------------------------------------------ |
+| `student` | Visualizar as próprias notas, perfil e enviar uploads                    |
 | `teacher` | Visualizar alunos, listar, criar, editar e excluir notas, enviar uploads |
-| `admin` | Gerenciar usuários, visualizar notas e enviar uploads |
+| `admin`   | Gerenciar usuários, visualizar notas e enviar uploads                    |
 
 ## Estrutura do projeto
 
@@ -179,11 +179,11 @@ npm run seed:test-users
 
 Senha padrão dos usuários de teste: `Escola@2026`.
 
-| Perfil | E-mail |
-| --- | --- |
-| Administrador | `admin@escola.com` |
-| Professor | `professor@escola.com` |
-| Aluno | `aluno1@escola.com` ou `aluno2@escola.com` |
+| Perfil        | E-mail                                     |
+| ------------- | ------------------------------------------ |
+| Administrador | `admin@escola.com`                         |
+| Professor     | `professor@escola.com`                     |
+| Aluno         | `aluno1@escola.com` ou `aluno2@escola.com` |
 
 ### Frontend
 
@@ -207,10 +207,10 @@ npm run build
 
 ### Autenticação
 
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| `POST` | `/api/auth/register` | Cadastra usuário |
-| `POST` | `/api/auth/login` | Autentica e retorna JWT |
+| Método | Rota                 | Descrição               |
+| ------ | -------------------- | ----------------------- |
+| `POST` | `/api/auth/register` | Cadastra usuário        |
+| `POST` | `/api/auth/login`    | Autentica e retorna JWT |
 
 Exemplo de login:
 
@@ -231,28 +231,28 @@ Authorization: Bearer seu-token-jwt
 
 Todas as rotas exigem autenticação. O gerenciamento completo é exclusivo do administrador.
 
-| Método | Rota | Permissão |
-| --- | --- | --- |
-| `GET` | `/api/usuarios/me` | Usuário autenticado |
-| `GET` | `/api/usuarios/alunos` | Professor ou administrador |
-| `GET` | `/api/usuarios` | Administrador |
-| `GET` | `/api/usuarios/:id` | Administrador |
-| `POST` | `/api/usuarios` | Administrador |
-| `PUT` | `/api/usuarios/:id` | Administrador |
-| `DELETE` | `/api/usuarios/:id` | Administrador |
+| Método   | Rota                   | Permissão                  |
+| -------- | ---------------------- | -------------------------- |
+| `GET`    | `/api/usuarios/me`     | Usuário autenticado        |
+| `GET`    | `/api/usuarios/alunos` | Professor ou administrador |
+| `GET`    | `/api/usuarios`        | Administrador              |
+| `GET`    | `/api/usuarios/:id`    | Administrador              |
+| `POST`   | `/api/usuarios`        | Administrador              |
+| `PUT`    | `/api/usuarios/:id`    | Administrador              |
+| `DELETE` | `/api/usuarios/:id`    | Administrador              |
 
 ### Notas
 
 Todas as rotas de notas exigem autenticação.
 
-| Método | Rota | Permissão |
-| --- | --- | --- |
-| `GET` | `/api/grades/my` | Aluno |
-| `GET` | `/api/grades` | Professor ou administrador |
-| `GET` | `/api/grades/:id` | Professor ou administrador |
-| `POST` | `/api/grades` | Professor |
-| `PUT` | `/api/grades/:id` | Professor |
-| `DELETE` | `/api/grades/:id` | Professor |
+| Método   | Rota              | Permissão                  |
+| -------- | ----------------- | -------------------------- |
+| `GET`    | `/api/grades/my`  | Aluno                      |
+| `GET`    | `/api/grades`     | Professor ou administrador |
+| `GET`    | `/api/grades/:id` | Professor ou administrador |
+| `POST`   | `/api/grades`     | Professor                  |
+| `PUT`    | `/api/grades/:id` | Professor                  |
+| `DELETE` | `/api/grades/:id` | Professor                  |
 
 A rota `/api/notas` é um alias para as rotas de notas.
 
